@@ -19,9 +19,10 @@
 
 class Connection {
 public:
-    Connection(const std::string &addr,int port);
+    Connection(const std::string &addr,unsigned port);
+    Connection(const std::string &addr,unsigned port,unsigned db);
     ~Connection();
-    Response send_commands(std::vector<std::string>& commands);
+    Response execute_command(std::vector<std::string>& commands);
 
 private:
     int connect_to_redis();
@@ -38,7 +39,7 @@ private:
 
     int client_fd;
     std::string redis_addr;
-    int redis_port;
+    unsigned redis_port;
 };
 
 #endif

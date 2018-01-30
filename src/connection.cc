@@ -1,13 +1,19 @@
 #include "connection.h"
 
-Connection::Connection(const std::string& addr, int port) {
+Connection::Connection(const std::string &addr, unsigned port) {
     redis_addr = addr;
     redis_port = port;
     client_fd = connect_to_redis();
 }
 
-Connection::~Connection(){
-    if(client_fd>0){
+Connection::Connection(const std::string &addr, unsigned port, unsigned db) {
+    redis_addr = addr;
+    redis_port = port;
+    client_fd = connect_to_redis();
+}
+
+Connection::~Connection() {
+    if (client_fd > 0) {
         close(client_fd);
     }
 }
@@ -27,13 +33,13 @@ int Connection::connect_to_redis() {
         return -1;
     }
 
-    if (connect(sockfd, (sockaddr*)&servaddr, sizeof(servaddr)) < 0) {
+    if (connect(sockfd, (sockaddr *) &servaddr, sizeof(servaddr)) < 0) {
         return -1;
     }
     return sockfd;
 }
 
-int Connection::get_line(char* buf, int size) {
+int Connection::get_line(char *buf, int size) {
     char c = '\0';
     int read_size = 0;
     while (read_size < size - 1 && c != '\n') {
@@ -58,9 +64,9 @@ int Connection::get_line(char* buf, int size) {
     return read_size;
 }
 
-std::string Connection::get_string_from_reply(char* buffer) {
-    std::string result = "";
-    char* p = buffer;
+std::string Connection::get_string_from_reply(char *buffer) {
+    std::string result;
+    char *p = buffer;
     p++;
     while (*p != '\0') {
         result += *p;
@@ -69,19 +75,19 @@ std::string Connection::get_string_from_reply(char* buffer) {
     return result;
 }
 
-std::string Connection::parser_status_reply(char* buffer) {
+std::string Connection::parser_status_reply(char *buffer) {
     std::string result = get_string_from_reply(buffer);
     return result;
 }
 
-std::string Connection::parser_error_reply(char* buffer) {
+std::string Connection::parser_error_reply(char *buffer) {
     std::string result = get_string_from_reply(buffer);
     return result;
 }
 
-int Connection::get_int_from_reply(char* buffer) {
-    std::string str = "";
-    char* p = buffer;
+int Connection::get_int_from_reply(char *buffer) {
+    std::string str;
+    char *p = buffer;
     p++;
     while (*p != '\0') {
         str += *p;
@@ -91,13 +97,14 @@ int Connection::get_int_from_reply(char* buffer) {
     return result;
 }
 
-int Connection::parser_integer_reply(char* buffer) {
+int Connection::parser_integer_reply(char *buffer) {
     int result = get_int_from_reply(buffer);
     return result;
 }
 
-Response Connection::parser_buik_reply(char* buffer) {
+Response Connection::parser_buik_reply(char *buffer) {
     Response res;
+    res.res_type = RESPONSE_TYPE::BUIK_REPLY;
     int reply_len = get_int_from_reply(buffer);
     if (reply_len == -1) {
         res.is_null = true;
@@ -117,9 +124,10 @@ Response Connection::parser_buik_reply(char* buffer) {
     return res;
 }
 
-Response Connection::parser_multi_reply(char* buffer) {
+Response Connection::parser_multi_reply(char *buffer) {
     int reply_num = get_int_from_reply(buffer);
     Response res;
+    res.res_type = RESPONSE_TYPE::MULTI_BULK_REPLY;
     if (reply_num == -1) {
         res.is_null = true;
         return res;
@@ -159,17 +167,19 @@ Response Connection::recv_reply() {
         case '*':
             res = parser_multi_reply(buffer);
             break;
+        default:
+            break;
     }
     return res;
 }
 
-Response Connection::send_commands(std::vector<std::string>& commands) {
-    unsigned command_num = commands.size();
-    std::string command = "*" + std::to_string(command_num) + "\r\n";
-    for (auto str : commands) {
-        command += "$" + std::to_string(str.size()) + "\r\n" + str + "\r\n";
+Response Connection::execute_command(std::vector<std::string> &command) {
+    unsigned long command_num = command.size();
+    std::string command_str = "*" + std::to_string(command_num) + "\r\n";
+    for (auto &str : command) {
+        command_str += "$" + std::to_string(str.size()) + "\r\n" + str + "\r\n";
     }
-    send(client_fd, command.c_str(), command.size(), 0);
+    send(client_fd, command_str.c_str(), command_str.size(), 0);
     Response res = recv_reply();
     return res;
 }
