@@ -54,6 +54,8 @@ public:
 
     int append(const std::string &key, const std::string &value);
 
+    int bitcount(const std::string &key, int start = 0, int end = 0);
+
 private:
     Connection con;
 };

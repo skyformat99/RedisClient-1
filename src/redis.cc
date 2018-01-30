@@ -200,3 +200,13 @@ int Redis::append(const std::string &key, const std::string &value) {
     Response res = con.execute_command(command);
     return res.integer_res;
 }
+
+int Redis::bitcount(const std::string &key, int start, int end) {
+    std::vector<std::string> command = {"BITCOUNT", key};
+    if (start != 0 || end != 0) {
+        command.emplace_back(std::to_string(start));
+        command.emplace_back(std::to_string(end));
+    }
+    Response res = con.execute_command(command);
+    return res.integer_res;
+}

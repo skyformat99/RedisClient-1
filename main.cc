@@ -169,11 +169,19 @@ void test_append(Redis &redis) {
     std::cout << "Append Count:" << result << std::endl;
 }
 
+void test_bitcount(Redis &redis) {
+    std::string key;
+    std::cout << "Input Key:";
+    std::cin >> key;
+    int result = redis.bitcount(key,0,1);
+    std::cout << "bitount:" << result << std::endl;
+}
+
 int main() {
     std::string addr = "127.0.0.1";
     int port = 6379;
     Redis redis(addr, port);
     test_keys(redis);
-    test_append(redis);
+    test_bitcount(redis);
     return 0;
 }
